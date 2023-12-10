@@ -1,14 +1,12 @@
-function generateRandomCode(length) {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let randomCode = '';
-  
-    for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * characters.length);
-      randomCode += characters.charAt(randomIndex);
-    }
-  
-    return randomCode;
+function generateReferralCode() {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const codeLength = 6;
+  let referralCode = '';
+
+  for (let i = 0; i < codeLength; i++) {
+    referralCode += characters.charAt(Math.floor(Math.random() * characters.length));
   }
 
-
-module.exports = generateRandomCode;
+  return referralCode;
+}
+module.exports = generateReferralCode;

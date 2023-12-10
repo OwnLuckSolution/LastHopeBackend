@@ -1,5 +1,54 @@
 const mongoose = require('mongoose');
 
+const walletSchema = new mongoose.Schema({
+    balance: {
+        type: Number,
+        default: 0
+    },
+    transactions: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Transaction'
+        }
+    ]
+});
+
+const transactionSchema = new mongoose.Schema({
+    amount: Number,
+    description: String,
+    date: {
+        type: Date,
+        default: Date.now
+    },
+    username: {
+        type: String,
+        required:true,
+    },
+    email: {
+        type: String,
+        required: true,
+    },
+    isVerfied:{
+        type: Boolean,
+        required: true,
+        default: true,
+    },
+    type:{
+        type: String,
+        required: true,
+    },
+    status:{
+        type: String,
+        required: true,
+        default: "Approved",
+    },
+    paymentMehtod:{
+        type: String,
+        required: true,
+        default:"Cash idk",
+    }
+});
+
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -18,10 +67,10 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     isAdmin:{
-        type: String,
+        type: Boolean,
         default: false,
     },
-    myReferralCode: String,
+    referredBy: String,
     referralCode: String,
     verified:{
         type: Boolean,
@@ -31,7 +80,6 @@ const userSchema = new mongoose.Schema({
     verificationCodeExpires: Date,
     purchases: [
         {
-            //need to customise a bit
             productName: String,
             price: Number,
             date: {
@@ -39,8 +87,15 @@ const userSchema = new mongoose.Schema({
                 default: Date.now
             }
         }
-    ]
+    ],
+    wallet: {
+        type: walletSchema,
+        default: {}
+    }
 });
+
+const Wallet = mongoose.model('Wallet', walletSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema);
 const User = mongoose.model('User', userSchema);
 
-module.exports = User;
+module.exports = { User, Wallet, Transaction };

@@ -1,4 +1,7 @@
 const Contest = require("../models/Contest");
+const jwt = require("jsonwebtoken");
+const {User,Transaction,Wallet} = require("../models/User");
+const  mongoose  = require('mongoose');
 
 const contestController = {
   async createContest(req, res) {
@@ -29,7 +32,6 @@ const contestController = {
       res.status(500).json({ message: "Internal Server Error" });
     }
   },
-
   async endContest(req, res) {
     const contestId = req.params.id;
 
@@ -73,7 +75,6 @@ const contestController = {
       res.status(500).json({ message: "Internal Server Error" });
     }
   },
-
   async deleteContest(req, res) {
     const contestId = req.params.id;
     try {
@@ -113,7 +114,7 @@ const contestController = {
   },
   async editContest(req, res) {
     console.log("editing products");
-    const id = req.params.id; // Assuming contestId is passed in the request parameters
+    const id = req.params.id;
     console.log(id);
     const {
       name,
@@ -159,6 +160,65 @@ const contestController = {
       res.status(500).send("Error editing contest");
     }
   },
+  async buyContest(req, res) {
+    console.log("buying contest");
+    const token = req.headers.authorization;
+
+    if (!token) {
+        return res.status(401).json({ error: "Token not provided" });
+    }
+
+    try {
+        const decoded = await jwt.verify(token, "lottery-app");
+        const userEmail = decoded.email;
+
+        const user = await User.findOne({ email: userEmail });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const contestId = req.params.id;
+        const contest = await Contest.findById(contestId);
+
+        if (!contest) {
+            return res.status(404).json({ error: "Contest not found" });
+        }
+
+        const quantityToPurchase = req.body.quantity;
+        const totalPrice = quantityToPurchase * contest.price;
+
+        if (user.wallet.balance < totalPrice) {
+            return res.status(400).json({ error: "Insufficient balance" });
+        }
+
+        user.wallet.balance -= totalPrice;
+        
+        const transaction = new Transaction({
+            amount: totalPrice,
+            description: contest,
+            username: user.name,
+            email: user.email,
+            type: 'Contest',
+            paymentMehtod: 'Wallet',
+        });
+        console.log(user._id);
+        const participant ={
+          user: user.email,
+          quantity: quantityToPurchase
+        };
+        
+        contest.participants.push(participant);
+        await user.save();
+        await transaction.save();
+        await contest.save();
+
+        return res.status(200).json({ message: "Contest entries purchased successfully" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+},
 };
 
 module.exports = contestController;

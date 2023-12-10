@@ -1,26 +1,19 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+const participantSchema = new Schema({
+  user: {
+    type: String,  
+  },
+  quantity: Number
+});
+
 const lotteryContestSchema = new Schema({
   name: {
     type: String,
     required: true,
     trim: true,
   },
-  // startDate: {
-  //   type: Date,
-  //   required: true,
-  // },
-  // endDate: {
-  //   type: Date,
-  //   required: true,
-  // },
-  participants: [
-    {
-      type: String,
-      ref: 'User',
-    },
-  ],
   isLive: {
     type: Boolean,
     default: true,
@@ -49,18 +42,19 @@ const lotteryContestSchema = new Schema({
     type: Number,
     default: 0,
   },
-  winner1:{
+  winner1: {
     type: String,
     default: null,
   },
-  winner2:{
+  winner2: {
     type: String,
     default: null,
   },
-  winner3:{
+  winner3: {
     type: String,
     default: null,
   },
+  participants: [participantSchema], 
 });
 
 const Contest = mongoose.model('Contest', lotteryContestSchema);

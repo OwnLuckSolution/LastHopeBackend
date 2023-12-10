@@ -1,23 +1,20 @@
-const User = require("../models/User");
+const { User, Wallet, Transaction } = require('../models/User'); 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendVerificationEmail } = require("../services/emailService");
 const otpGenerator = require("otp-generator");
+const generateReferralCode = require('../services/generateReferral');
 
 const authController = {
   async signup(req, res) {
     try {
-      const { email, password, number, name } = req.body;
+      const { email, password, number, name ,referralCode} = req.body;
       const existingUser = await User.findOne({ email });
 
       if (existingUser) {
         return res.json("Already exists");
       }
 
-      // const otp = otpGenerator.generate(6, {
-      //   upperCaseAlphabets: false,
-      //   specialChars: false,
-      // });
       const otp = otpGenerator.generate(4, {
         upperCaseAlphabets: false,
         specialChars: false,
@@ -25,16 +22,24 @@ const authController = {
       });
 
       const hashedPassword = await bcrypt.hash(password, 10);
-
+      let referringUser = null;
+      if(referralCode){
+        referringUser = await User.findOne({referralCode});
+      }
       const newUser = new User({
         email,
         name,
         number,
         password: hashedPassword,
+        referredBy: referringUser ? referringUser.referralCode:null,
+        referralCode: generateReferralCode(),
         verificationCode: otp,
-        verificationCodeExpires: Date.now() + 600000, // 10 minutes expiry
+        verificationCodeExpires: Date.now() + 600000,
         verified: false,
       });
+
+      const newWallet = new Wallet();
+      newUser.wallet = newWallet;
 
       await newUser.save();
 
@@ -146,10 +151,10 @@ const authController = {
       const userEmail = decoded.email;
       const user = await User.findOne({ email: userEmail }); 
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        res.status(404).json({ error: "User not found" });
       }
 
-      res.status(200).json({ ...user._doc });
+      return res.status(200).json({ ...user._doc });
     } catch (error) {
       console.error("Error occurred:", error.message);
       res.status(500).json({ error: "Server error" });

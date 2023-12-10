@@ -4,6 +4,7 @@ const contestController = require('../controllers/contestController');
 const notificationsController = require('../controllers/notificationsController');
 const feedbackController = require("../controllers/feedbackController");
 const tutorialController = require('../controllers/tutorialController');
+const transactionController = require('../controllers/transactionController');
 const checkAdmin = require("../middleware/checkAdmin");
 const authenticateJWT = require("../middleware/aunthenticateJWT");//working
 
@@ -44,6 +45,17 @@ router.delete('/notification/delete/:id',authenticateJWT,checkAdmin, notificatio
 router.get('/getFeedback',authenticateJWT,checkAdmin,feedbackController.getFeedback);
 //create Tutorials
 router.post('/createTutorial',authenticateJWT,checkAdmin,tutorialController.createTutorial);
-module.exports = router;
+//get tutorials
+router.get('/getTutorial',authenticateJWT,checkAdmin,tutorialController.getTutorial);
+//delete tutorials
+router.delete('/deleteTutorial/:id',authenticateJWT,checkAdmin,tutorialController.deleteTutorial);
+//------------------TRANSACTIONS---------------------
+//need another route just to get all transactions
+router.get('/getAllTransactions',authenticateJWT,checkAdmin,transactionController.getAllTransactions);
+router.put('/approveTransactions/:id',authenticateJWT,checkAdmin,transactionController.approveTransactions);
 
-// tutorial get and delete 
+
+
+
+
+module.exports = router;
