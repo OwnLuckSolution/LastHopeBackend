@@ -124,7 +124,7 @@ const authController = {
         return res.status(404).json({ error: "User not found" });
       }
 
-      return res.status(200).json({ ...user._doc });
+      return res.status(200).json({ user });
     } catch (error) {
       console.error("Error occurred:", error.message);
       res.status(500).json({ error: "Server error" });

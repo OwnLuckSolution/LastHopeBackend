@@ -25,7 +25,7 @@ passport.deserializeUser(async (email, done) => {
 passport.use(new GoogleStrategy({
   clientID: '305383757758-0b5g5e3g2tu6fi1veqdmaa0jac14rm40.apps.googleusercontent.com',
   clientSecret: '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',
-  callbackURL: 'http://localhost:3000/auth/google/callback',
+  callbackURL: 'https://encouraging-lime-tick.cyclic.app/auth/google/callback',
   passReqToCallback: true
 },
 async function(request, accessToken, refreshToken, profile, done) {
