@@ -103,7 +103,7 @@ const authController = {
       };
       console.log(req.user);
       //res.status(200).send({ token });
-      res.status(200).send({ token, ...user._doc  });
+      res.status(200).send({ token, user  });
     } catch (error) {
       console.log(error);
     }
