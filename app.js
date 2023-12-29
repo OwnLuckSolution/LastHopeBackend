@@ -30,7 +30,7 @@ app.use('/auth', authRoutes);
 app.use('/admin',adminRoutes);
 app.use('/user',userRoutes);
 
-const PORT = 3000;
+const PORT = 3000 || process.env.PORT ;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
