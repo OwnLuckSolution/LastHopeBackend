@@ -107,28 +107,81 @@ const productController = {
       if (!token) {
         return res.status(401).json({ error: "Token not provided" });
       }
-  
+
       const decoded = await jwt.verify(token, "lottery-app");
       const userEmail = decoded.email;
       const user = await User.findOne({ email: userEmail });
-  
+
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-  
+
       const productId = req.params.id;
       const product = await Product.findById(productId);
-  
+
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
-  
-      const productPrice = product.price;
-  
+
+      const productPrice = product.salePrice;
+
       if (user.wallet.balance < productPrice) {
         return res.status(400).json({ error: "Insufficient balance" });
       }
-  
+      let referringUser = user.referredBy;
+      let i = 1;
+      let referringRates = {
+        1: 0.1,
+        2: 0.07,
+        3: 0.03,
+      };
+
+      while (referringUser !== null && i <= 3) {
+        referringUser = await User.findOne({ referralCode: referringUser });
+
+        if (referringUser) {
+          console.log(referringUser.email);
+          console.log(productPrice * referringRates[i]);
+
+          // Calculate commission based on the current level (assuming referringRates contains different commission rates)
+          const commissionAmount = productPrice * referringRates[i];
+
+          // Add commission to the respective level's commission field
+          switch (i) {
+            case 1:
+              referringUser.wallet.commission1 += commissionAmount;
+              break;
+            case 2:
+              referringUser.wallet.commission2 += commissionAmount;
+              break;
+            case 3:
+              referringUser.wallet.commission3 += commissionAmount;
+              break;
+            default:
+              break;
+          }
+
+          referringUser.wallet.balance += commissionAmount; // Add to balance as well
+          console.log(referringUser.wallet.balance);
+
+          try {
+            await referringUser.save();
+          } catch (error) {
+            console.error("Error saving referring user:", error);
+            break;
+          }
+
+          referringUser = referringUser.referredBy;
+          i++;
+        } else {
+          break;
+        }
+      }
+
+      console.log(user.email, "orginal user");
+      user.wallet.balance -= productPrice;
+      await user.save();
+
       const transaction = new Transaction({
         amount: productPrice,
         description: product,
@@ -139,17 +192,16 @@ const productController = {
         paymentMethod: "Wallet",
       });
       await transaction.save();
-  
-      user.wallet.balance -= productPrice;
+
       user.wallet.transactions.push(transaction._id);
       await user.save();
-  
+
       return res.status(200).json({ message: "Transaction successful" });
     } catch (error) {
       console.error("Error occurred:", error.message);
       res.status(500).json({ error: "Server error" });
     }
-  },  
+  },
 };
 
 module.exports = productController;

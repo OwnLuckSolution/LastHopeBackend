@@ -150,12 +150,16 @@ const contestController = {
         },
         { new: true }
       );
+      const winner_1 = await User.findOne({ id: winner1 });
+      const winner_2 = await User.findOne({ id: winner2 });
+      const winner_3 = await User.findOne({ id: winner3 });
+
 
       if (!updatedContest) {
         return res.status(404).send("Contest not found");
       }
 
-      res.status(200).json(updatedContest);
+      res.status(200).json(updatedContest,winner_1,winner_2,winner_3);
     } catch (error) {
       res.status(500).send("Error editing contest");
     }

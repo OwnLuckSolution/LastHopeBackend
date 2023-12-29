@@ -1,9 +1,62 @@
 const mongoose = require('mongoose');
 
+
+const investmentSchema = new mongoose.Schema({
+    type: {
+        type: String,
+        enum: ['A', 'B'], 
+        required: true,
+    },
+    initialAmount: {
+        type: Number,
+        required: true,
+    },
+    totalReturn: {
+        type: Number,
+        default: 0,
+    },
+    isActive:{
+        type:Boolean,
+        required: true,
+        default: true,
+    },
+    user:{
+        type:String,
+        required:true,
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+    dailyIncome:{
+        type: Number,
+        default: 0,
+    },
+    monthIncome:{
+        type: Number,
+        default: 0,
+    }
+});
 const walletSchema = new mongoose.Schema({
     balance: {
         type: Number,
         default: 0
+    },
+    totalCommission:{
+        type:Number,
+        default : 0
+    },
+    commission1:{
+        type:Number,
+        default : 0
+    },
+    commission2:{
+        type:Number,
+        default : 0
+    },
+    commission3:{
+        type:Number,
+        default : 0
     },
     transactions: [
         {
@@ -62,19 +115,35 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    image:{
+        type: String,
+        required: false,
+    },
     number: {
         type: String,
         required: true
     },
+    googleId:{
+        type: String,
+        default:false,
+    },
     isAdmin:{
         type: Boolean,
         default: false,
+    },
+    token:{
+        type:String,
+        default: null,
     },
     referredBy: String,
     referralCode: String,
     verified:{
         type: Boolean,
         default: false,
+    },
+    tempOTP: {
+        type: String,
+        default: null,
     },
     verificationCode: String,
     verificationCodeExpires: Date,
@@ -88,14 +157,18 @@ const userSchema = new mongoose.Schema({
             }
         }
     ],
+    investments: [investmentSchema],
     wallet: {
         type: walletSchema,
         default: {}
-    }
+    },
 });
+
+
 
 const Wallet = mongoose.model('Wallet', walletSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
 const User = mongoose.model('User', userSchema);
+const Investment = mongoose.model('Investment',investmentSchema)
 
-module.exports = { User, Wallet, Transaction };
+module.exports = { User, Wallet, Transaction,Investment};

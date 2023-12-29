@@ -25,7 +25,7 @@ router.delete('/removeProduct/:id', authenticateJWT,checkAdmin, productsControll
 router.post('/addLottery',authenticateJWT,checkAdmin, contestController.createContest);
 //edit lottery
 router.put('/editLottery/:id',authenticateJWT,checkAdmin,contestController.editContest);
-//select winner + unlive lottery 
+//select winner + unlive lottery //used to select winner
 router.put('/endLottery/:id',authenticateJWT,checkAdmin, contestController.endContest);
 //get lotteries
 router.get('/getLottery',authenticateJWT,checkAdmin, contestController.getContest);
