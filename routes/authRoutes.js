@@ -18,14 +18,14 @@ router.get('/google',
 );
 
 router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: 'https://encouraging-lime-tick.cyclic.app/auth/login' }),
+  passport.authenticate('google', { failureRedirect: '/auth/login' }),
   function(req, res) {
     const token = req.user.token;
     console.log(`google callback route`,req.user.token);
     res.header('Authorization', `${token}`);
     req.additionalData = { example: 'Some additional data' };
     console.log(req.user.token,'google callback route 2');
-    res.redirect('https://encouraging-lime-tick.cyclic.app/user/getProducts');
+    res.redirect('/user/getProducts');
   }
 );
 

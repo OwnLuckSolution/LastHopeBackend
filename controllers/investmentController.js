@@ -1,4 +1,4 @@
-const { Investment, User,Transaction } = require("../models/User");
+const { Investment, User, Transaction } = require("../models/User");
 const jwt = require("jsonwebtoken");
 
 const investmentController = {
@@ -21,7 +21,6 @@ const investmentController = {
         type,
         initialAmount,
         user: user.email,
-
       });
       const newTransaction = new Transaction({
         amount: initialAmount,
@@ -29,11 +28,17 @@ const investmentController = {
         username: user.name,
         email: user.email,
         isVerified: true,
-        type:"Investment",
+        type: "Investment",
         status: "Approved",
-      })
-      await newTransaction.save();
-      await newInvestment.save();
+      });
+      const interestRate =
+          newInvestment.type === "A"
+            ? 0.07
+            : newInvestment.type === "B"
+            ? 0.025
+            : 0;
+      newInvestment.dailyIncome = (initialAmount*interestRate)/30;
+      console.log(newInvestment.dailyIncome);
 
       if (initialAmount > user.wallet.balance) {
         return res.status(400).send("Not sufficient funds");
@@ -41,7 +46,8 @@ const investmentController = {
         user.wallet.balance -= initialAmount;
         user.investments.push(newInvestment);
         await user.save();
-
+        await newTransaction.save();
+        await newInvestment.save();
 
         res
           .status(201)
@@ -57,78 +63,105 @@ const investmentController = {
       const token = req.headers.authorization;
       const decoded = await jwt.verify(token, "lottery-app");
       const userEmail = decoded.email;
-      const user = await User.findOne({ email: userEmail }).populate("wallet");
-    
+      const user = await User.findOne({email:userEmail});
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-    
-      const investments = await Investment.find({ user: userEmail });
-    
-      function calculateIncome(investments) {
-        return investments.map((investment) => {
-          let dailyIncome = 0;
-          let monthlyIncome = 0;
-          const interestRate =
-            investment.type === "A"
-              ? 0.07
-              : investment.type === "B"
-              ? 0.025
-              : 0;    
-          dailyIncome = (investment.initialAmount * interestRate) / 30; // Assuming a 30-day month
-          monthlyIncome = investment.initialAmount * interestRate;
-    
-          return {
-            _id: investment._id,
-            type: investment.type,
-            initialAmount: investment.initialAmount,
-            dailyIncome: dailyIncome.toFixed(2),
-            monthlyIncome: monthlyIncome.toFixed(2), 
-          };
-        });
+      const investments = await Investment.find({ user: userEmail });   
+      for (const investment of investments) {
+        let dailyIncome = 0;
+        let monthIncome = 0;
+        const interestRate =
+          investment.type === "A"
+            ? 0.07
+            : investment.type === "B"
+            ? 0.025
+            : 0;
+        monthIncome = investment.initialAmount * interestRate;
+        const lastUpdate = new Date(investment.lastUpdate);
+        const currentDate = new Date();
+        const timeDiff = currentDate.getTime() - lastUpdate.getTime();
+        const millisecondsInMonth = 1000 * 60 * 60 * 24 * 30.44;
+        const millisecondsInDay = 1000*60*60*24;
+        const daysPassed = timeDiff/ millisecondsInDay;
+        // console.log(daysPassed);
+        if(daysPassed >= 1){
+          investment.monthIncome += daysPassed * investment.dailyIncome;
+          investment.lastUpdate = currentDate;
+          investment.save();
+        }
       }
-    
-      const allInvestments = calculateIncome(investments);
-      res.json({ allInvestments });
-    } catch (error) {
+      
+      res.json(investments);
+     }catch (error) {
       console.error(error);
-      res.status(500).json({ error: "Internal server error" });
+      
     }
-    
   },
-  async withdrawInvestment(req,res){
-    const terminate = req.body.terminate;
-    const token = req.headers.authorization;
+  async withdrawInvestment(req, res) {
+    try {
+      //check from last withdrawal 
+      const terminate = req.body.terminate;
+      const token = req.headers.authorization;
       const decoded = await jwt.verify(token, "lottery-app");
       const userEmail = decoded.email;
       const user = await User.findOne({ email: userEmail }).populate("wallet");
-    
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-    const investmentId = req.params.id;
-    const investment = await Investment({_id:investmentId});
-    const createdAtDate = new Date(investment.createdAt);
-    const oneMonthLater = new Date(createdAtDate.setMonth(createdAtDate.getMonth() + 1));
-    const currentDate = new Date();
-    if (currentDate > oneMonthLater) {
-      user.balance += investment.monthlyIncome;
-      investment.monthlyIncome = 0;
-      investment.dailyIncome = 0;
-      await investment.save();
-      await user.save();
-      if(terminate==="yes"){
-        user.balance += investment.initialAmount;
-        await User.findOneAndUpdate(
-          { email: userEmail },
-          { $pull: { investments: { _id: investmentId } } },
-          { new: true }
-        );
+      const investmentId = req.params.id;
+      const investment = await Investment.findById(investmentId);
+      console.log(investment.createdAt);
+      if (investment.isActive != false) {
+        const lastWithdrawal = new Date(investment.lastWithdrawal);
+        const currentDate = new Date();
+        const timeDiff = currentDate.getTime() - lastWithdrawal.getTime();
+        const millisecondsInMonth = 1000 * 60 * 60 * 24 * 30.44;
+        const monthsPassed = timeDiff / millisecondsInMonth;
+        console.log(`user initial balance ${user.wallet.balance}`);
+        if (monthsPassed >= 1) {
+          user.wallet.balance += investment.monthIncome;
+          investment.lastWithdrawal = currentDate;
+          console.log(`user balance after month profit ${user.wallet.balance}`);
+          if (terminate === "yes") {
+            user.wallet.balance = user.wallet.balance + investment.initialAmount;
+            console.log(`user balance after terminating ${user.wallet.balance}`);
+            investment.isActive = false;
+            const newTransaction1 = new Transaction({
+              amount: investment.initialAmount,
+              description: `Investment  type ${investment.type}, Amount ${investment.initialAmount}`,
+              username: user.name,
+              email: user.email,
+              isVerified: true,
+              type: "Investment Cancel",
+              status: "Approved",
+            });
+            await newTransaction1.save();
+          }
+          const newTransaction2 = new Transaction({
+            amount: investment.monthIncome,
+            description: `Investment  type ${investment.type}, Amount ${investment.monthIncome}`,
+            username: user.name,
+            email: user.email,
+            isVerified: true,
+            type: "Investment Withdraw",
+            status: "Approved",
+          });
+          investment.monthIncome = 0;
+          await investment.save();
+          await user.save();
+          await newTransaction2.save();
+          res.send("investment withdrawn successfully");
+        } else {
+          res.status(400).send({ message:"1 Month has not passed since last withdrawel"});
+        }
+      } else {
+        res.status(400).send({message: "Investment is already inactive"});
       }
+    } catch (error) {
+      console.log(error);
     }
-    
-    //console.log(investment);
-    //console.log(user.balance);
   },
 };
 

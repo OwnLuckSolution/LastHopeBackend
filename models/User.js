@@ -28,9 +28,17 @@ const investmentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    lastUpdate:{
+        type: Date,
+        default: Date.now,
+    },
     dailyIncome:{
         type: Number,
         default: 0,
+    },
+    lastWithdrawal:{
+        type: Date,
+        default: Date.now(),
     },
     monthIncome:{
         type: Number,
@@ -98,7 +106,7 @@ const transactionSchema = new mongoose.Schema({
     paymentMehtod:{
         type: String,
         required: true,
-        default:"Cash idk",
+        default:"Wallet",
     }
 });
 
