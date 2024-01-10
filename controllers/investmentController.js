@@ -88,7 +88,7 @@ const investmentController = {
         if(daysPassed >= 1){
           investment.monthIncome += daysPassed * investment.dailyIncome;
           investment.lastUpdate = currentDate;
-          investment.save();
+          await investment.save();
         }
       }
       
